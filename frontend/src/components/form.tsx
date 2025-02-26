@@ -1,5 +1,6 @@
+import { lazy } from "react";
 import { CalendarCheck } from "lucide-react";
-import { Button } from "./ui/button";
+const Button = lazy(() => import("./ui/button"));
 import { Input } from "./ui/input";
 
 interface FormData {

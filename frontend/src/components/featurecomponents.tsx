@@ -1,4 +1,5 @@
-import { Button } from "./ui/button";
+import { lazy } from "react";
+const Button = lazy(() => import("./ui/button"));
 import {
 	DropdownMenu,
 	DropdownMenuContent,

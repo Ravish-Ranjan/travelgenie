@@ -1,6 +1,6 @@
 import { Moon, Sun, Monitor } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
+import { lazy } from "react";
+const Button = lazy(() => import("./button"));
 import { useTheme } from "@/components/ui/theme-provider";
 
 export function ModeToggle() {

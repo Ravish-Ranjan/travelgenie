@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Calendar } from "lucide-react";
 import { axiosInstance } from "../utils/axios";
-import Features from "../components/features";
 import { Timeline } from "../components/ui/timeline";
-import Form from "../components/form";
 import { H4, Muted, Small } from "../components/ui/Typography";
-import { Button } from "@/components/ui/button";
+const Button = lazy(() => import("@/components/ui/button"));
+const Features = lazy(() => import("../components/features"));
+const Form = lazy(() => import("../components/form"));
 
 const TravelPlanner = () => {
 	const [formData, setFormData] = useState({
@@ -145,7 +145,10 @@ const TravelPlanner = () => {
 								</div>
 							))}
 						</div>
-						<Button className="mt-2 text-sm text-right" variant={"secondary"}>
+						<Button
+							className="mt-2 text-sm text-right"
+							variant={"secondary"}
+						>
 							Daily Budget: {formData.currency}
 							{day.daily_budget}
 						</Button>
