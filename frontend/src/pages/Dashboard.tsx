@@ -8,6 +8,7 @@ import { H4, Muted, Small } from "../components/ui/Typography";
 const Button = lazy(() => import("@/components/ui/button"));
 const Features = lazy(() => import("../components/features"));
 const Form = lazy(() => import("../components/form"));
+import axios from "axios";
 
 const TravelPlanner = () => {
 	const [formData, setFormData] = useState({
@@ -47,10 +48,16 @@ const TravelPlanner = () => {
 		title: string;
 		content: React.ReactNode;
 	};
+	interface weatherI {
+		description: string;
+		icons: string;
+		temperature: number;
+	}
 
 	const [itinerary, setItinerary] = useState<Itinerary | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [weather, setWeather] = useState<weatherI[] | null>(null);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target as HTMLInputElement;
@@ -63,6 +70,8 @@ const TravelPlanner = () => {
 	const generateItinerary = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		const cache = localStorage.getItem(JSON.stringify(formData));
+		setLoading(true);
+		setError(null);
 		if (cache) {
 			setLoading(true);
 			setTimeout(() => {
@@ -71,9 +80,6 @@ const TravelPlanner = () => {
 			}, 1000);
 			return;
 		}
-
-		setLoading(true);
-		setError(null);
 
 		try {
 			const response = await axiosInstance.post(
@@ -91,12 +97,68 @@ const TravelPlanner = () => {
 				JSON.stringify(formData),
 				JSON.stringify(data)
 			);
+			const weather = await getWeatherForecast(Number(formData.duration));
+			setWeather(weather);
 		} catch (err) {
 			setError((err as Error).message);
 		} finally {
 			setLoading(false);
 		}
 	};
+
+	async function getWeatherForecast(days: number) {
+		// First, get coordinates for the city
+		const geoResponse = await axios.get(
+			`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+				formData.destination
+			)}&count=1`
+		);
+
+		if (!geoResponse.data.results?.[0]) {
+			throw new Error("City not found");
+		}
+
+		const { latitude, longitude } = geoResponse.data.results[0];
+
+		// Get weather forecast
+		const weatherResponse = await axios.get(
+			`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,weathercode&timezone=auto`
+		);
+
+		const weatherCodes: Record<number, string> = {
+			0: "Clear sky",
+			1: "Mainly clear",
+			2: "Partly cloudy",
+			3: "Overcast",
+			45: "Foggy",
+			51: "Light drizzle",
+			53: "Moderate drizzle",
+			55: "Dense drizzle",
+			61: "Slight rain",
+			63: "Moderate rain",
+			65: "Heavy rain",
+			80: "Slight rain showers",
+			81: "Moderate rain showers",
+			82: "Violent rain showers",
+		};
+
+		const ret = weatherResponse.data.daily.time
+			.slice(0, days)
+			.map((_, index: number) => ({
+				temperature: Math.round(
+					weatherResponse.data.daily.temperature_2m_max[index]
+				),
+				description:
+					weatherCodes[
+						weatherResponse.data.daily.weathercode[index]
+					] || "Normal",
+				icon:
+					weatherResponse.data.daily.weathercode[index] <= 3
+						? "sun"
+						: "cloud",
+			}));
+		return ret;
+	}
 
 	const generateTimeline = () => {
 		const itineraies: TimelineEntry[] = [];
@@ -105,7 +167,13 @@ const TravelPlanner = () => {
 				title: `Day ${day.day}`,
 				content: (
 					<div key={day.day} className="p-4 border rounded-md">
-						<h4 className="font-medium">{day.date}</h4>
+						<h4 className="font-medium flex justify-between">
+							<span>{day.date}</span>
+							<span>
+								{weather && weather[day.day - 1]?.temperature}{"*C "}
+								{weather && weather[day.day - 1]?.description}{" "}
+							</span>
+						</h4>
 						<div className="mt-2 space-y-2">
 							{day.activities.map((activity, index) => (
 								<div
@@ -149,7 +217,7 @@ const TravelPlanner = () => {
 							className="mt-2 text-sm text-right"
 							variant={"secondary"}
 						>
-							Daily Budget: {formData.currency}
+							Daily Budget: {formData.currency}{" "}
 							{day.daily_budget}
 						</Button>
 					</div>
