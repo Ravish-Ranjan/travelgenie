@@ -142,18 +142,32 @@ const TravelPlanner = () => {
 			82: "Violent rain showers",
 		};
 
-		const ret = weatherResponse.data.daily.time
+		interface WeatherResponse {
+			daily: {
+				time: string[];
+				temperature_2m_max: number[];
+				weathercode: number[];
+			};
+		}
+
+		const ret: weatherI[] = (
+			weatherResponse.data as WeatherResponse
+		).daily.time
 			.slice(0, days)
 			.map((_, index: number) => ({
 				temperature: Math.round(
-					weatherResponse.data.daily.temperature_2m_max[index]
+					(weatherResponse.data as WeatherResponse).daily
+						.temperature_2m_max[index]
 				),
 				description:
 					weatherCodes[
-						weatherResponse.data.daily.weathercode[index]
+						(weatherResponse.data as WeatherResponse).daily
+							.weathercode[index]
 					] || "Normal",
-				icon:
-					weatherResponse.data.daily.weathercode[index] <= 3
+				icons:
+					(weatherResponse.data as WeatherResponse).daily.weathercode[
+						index
+					] <= 3
 						? "sun"
 						: "cloud",
 			}));
@@ -170,8 +184,10 @@ const TravelPlanner = () => {
 						<h4 className="font-medium flex justify-between">
 							<span>{day.date}</span>
 							<span>
-								{weather && weather[day.day - 1]?.temperature}{"*C "}
-								{weather && weather[day.day - 1]?.description}{" "}
+								{weather && weather[day.day - 1]?.temperature}
+								{"*C "}
+								{weather &&
+									weather[day.day - 1]?.description}{" "}
 							</span>
 						</h4>
 						<div className="mt-2 space-y-2">
@@ -217,8 +233,7 @@ const TravelPlanner = () => {
 							className="mt-2 text-sm text-right"
 							variant={"secondary"}
 						>
-							Daily Budget: {formData.currency}{" "}
-							{day.daily_budget}
+							Daily Budget: {formData.currency} {day.daily_budget}
 						</Button>
 					</div>
 				),
